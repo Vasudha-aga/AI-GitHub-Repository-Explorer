@@ -252,6 +252,7 @@ export interface UserProfile {
   joinedDate: string;
   streakDays: number;
   aiInsightsCount: number;
+  email?: string;
   avatar?: string;
 }
 
