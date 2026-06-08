@@ -1,6 +1,5 @@
 # RepoLens (AI GitHub Repository Explorer)
-
-![RepoLens Preview](./Frontend/public/favicon.ico) <!-- Placeholder -->
+<!-- Placeholder -->
 
 **RepoLens** is a modern, AI-powered GitHub repository explorer designed to help developers seamlessly discover, understand, and save open-source projects. By integrating the GitHub API with Google's Gemini AI, RepoLens analyzes repositories to provide clear, practical summaries, skill requirements, and learning outcomes in plain English—no matter what language the original repository is written in.
 
