@@ -91,7 +91,7 @@ export function RepoDetailsPage({ repo, onBack, onSave }: RepoDetailsPageProps) 
           <div className="flex flex-col sm:flex-row items-start gap-5">
             <div className="flex-1">
               <div className="flex items-center gap-2 flex-wrap mb-1">
-                <span style={{ fontSize: "13px", color: "var(--muted-foreground)" }}>{repo.owner}</span>
+                <span style={{ fontSize: "13px", color: "var(--muted-foreground)" }}>{typeof repo.owner === 'object' ? repo.owner.login : repo.owner}</span>
                 <span style={{ color: "var(--glass-border)" }}>/</span>
                 <h1 style={{ fontSize: "22px", fontWeight: 800, color: "var(--foreground)", letterSpacing: "-0.04em" }}>{repo.name}</h1>
               </div>
@@ -111,7 +111,7 @@ export function RepoDetailsPage({ repo, onBack, onSave }: RepoDetailsPageProps) 
             {/* Actions */}
             <div className="flex flex-col gap-2 flex-shrink-0 w-full sm:w-auto">
               <button
-                onClick={() => window.open(`https://github.com/${repo.owner}/${repo.name}`, "_blank", "noopener,noreferrer")}
+                onClick={() => window.open(`https://github.com/${typeof repo.owner === 'object' ? repo.owner.login : repo.owner}/${repo.name}`, "_blank", "noopener,noreferrer")}
                 className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl transition-all hover:opacity-85 active:scale-[0.98]"
                 style={{ background: "var(--gradient-brand)", color: "white", fontSize: "13px", fontWeight: 600, boxShadow: "0 0 16px var(--blue-glow)" }}
               >

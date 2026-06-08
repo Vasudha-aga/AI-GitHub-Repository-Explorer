@@ -46,6 +46,7 @@ function mapApiUser(dbUser: any): UserProfile {
     aiInsightsCount: 89,
     email: dbUser.email,
     avatar: dbUser.avatar_url || undefined,
+    tech_stack: dbUser.tech_stack,
   };
 }
 
@@ -89,6 +90,8 @@ export default function App() {
   const [currentPage, setCurrentPage] = useState<Page>("dashboard");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedRepo, setSelectedRepo] = useState<Repository | null>(null);
+  const [topMlRepos, setTopMlRepos] = useState<Repository[]>([]);
+  const [aiPicksRepos, setAiPicksRepos] = useState<Repository[]>([]);
   const [repos, setRepos] = useState<Repository[]>([]);
   const [savedRepos, setSavedRepos] = useState<Repository[]>([]);
   const [user, setUser] = useState<UserProfile | null>(null);
@@ -177,6 +180,12 @@ export default function App() {
 
       // Load trending queries
       api.get("/api/repos/trending").then(res => setTrendingSearches(res.data.trending || [])).catch(() => { });
+
+      // Load personalized recommendations
+      api.get("/api/repos/recommendations").then(res => {
+        if (res.data.topMl) setTopMlRepos(res.data.topMl);
+        if (res.data.aiPicks) setAiPicksRepos(res.data.aiPicks);
+      }).catch(err => console.error("Recommendations fetch failed:", err));
     } catch (e) {
       console.error("Failed to load dashboard data:", e);
     }
@@ -234,7 +243,8 @@ export default function App() {
     setCurrentPage("details");
 
     try {
-      const res = await api.get(`/api/repos/${repo.owner}/${repo.name}`);
+      const ownerName = typeof repo.owner === 'object' ? repo.owner.login : repo.owner;
+      const res = await api.get(`/api/repos/${ownerName}/${repo.name}`);
       let fullRepo = { ...repo, ...res.data };
       setSelectedRepo(fullRepo);
 
@@ -242,7 +252,7 @@ export default function App() {
         const aiRes = await api.post("/api/ai/analyze", {
           repo_id: fullRepo.id,
           name: fullRepo.name,
-          owner: fullRepo.owner,
+          owner: ownerName,
           description: fullRepo.description,
           language: fullRepo.language,
           stars: fullRepo.stars,
@@ -301,7 +311,8 @@ export default function App() {
         bio: updated.bio,
         location: updated.location,
         website: updated.website,
-        avatar: updated.avatar
+        avatar: updated.avatar,
+        tech_stack: updated.tech_stack
       });
       setUser(mapApiUser(res.data.user));
     } catch (err) {
@@ -335,7 +346,7 @@ export default function App() {
   const renderPage = () => {
     switch (currentPage) {
       case "dashboard":
-        return <DashboardPage onNavigate={nav} onViewRepo={handleView} onSaveRepo={handleSave} repos={repos} user={user} searchCount={searchCount} savedCount={savedCount} savedRepos={savedRepos} searchHistory={searchHistory} theme={theme} />;
+        return <DashboardPage onNavigate={nav} onViewRepo={handleView} onSaveRepo={handleSave} repos={repos} user={user} searchCount={searchCount} savedCount={savedCount} savedRepos={savedRepos} searchHistory={searchHistory} theme={theme} topMlRepos={topMlRepos} aiPicksRepos={aiPicksRepos} />;
       case "search":
         const recentSearchesFlat = searchHistory.flatMap(g => g.items).slice(0, 10);
         return <SearchPage onSearch={handleSearch} recentSearches={recentSearchesFlat} trendingSearches={trendingSearches} />;
@@ -344,7 +355,7 @@ export default function App() {
       case "details":
         return selectedRepo
           ? <RepoDetailsPage repo={selectedRepo} onBack={() => setCurrentPage("results")} onSave={handleSave} />
-          : <DashboardPage onNavigate={nav} onViewRepo={handleView} onSaveRepo={handleSave} repos={repos} user={user} searchCount={searchCount} savedCount={savedCount} savedRepos={savedRepos} searchHistory={searchHistory} theme={theme} />;
+          : <DashboardPage onNavigate={nav} onViewRepo={handleView} onSaveRepo={handleSave} repos={repos} user={user} searchCount={searchCount} savedCount={savedCount} savedRepos={savedRepos} searchHistory={searchHistory} theme={theme} topMlRepos={topMlRepos} aiPicksRepos={aiPicksRepos} />;
       case "recommendations":
         return <RecommendationsPage repos={repos} onViewRepo={handleView} onSaveRepo={handleSave} searchCount={searchCount} />;
       case "saved":
@@ -356,7 +367,7 @@ export default function App() {
       case "settings":
         return <SettingsPage user={user} onUpdateUser={handleUpdateUser} theme={theme} onThemeChange={setTheme} onLogout={handleLogout} aiModel={aiModel} onAiModelChange={setAiModel} />;
       default:
-        return <DashboardPage onNavigate={nav} onViewRepo={handleView} onSaveRepo={handleSave} repos={repos} user={user} searchCount={searchCount} theme={theme} />;
+        return <DashboardPage onNavigate={nav} onViewRepo={handleView} onSaveRepo={handleSave} repos={repos} user={user} searchCount={searchCount} savedCount={savedCount} savedRepos={savedRepos} searchHistory={searchHistory} theme={theme} topMlRepos={topMlRepos} aiPicksRepos={aiPicksRepos} />;
     }
   };
 

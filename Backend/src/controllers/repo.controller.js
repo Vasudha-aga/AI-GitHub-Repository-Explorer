@@ -148,3 +148,32 @@ export async function getTrendingSearches(req, res) {
     res.status(500).json({ error: "Failed to fetch trending searches" });
   }
 }
+
+// ── GET /api/repos/recommendations ──────────────────────────────────────────
+export async function getRecommendations(req, res) {
+  try {
+    const userId = req.user?.id;
+    let userTechQuery = "language:javascript"; // fallback
+    
+    if (userId) {
+      const user = await db.getUserById(userId);
+      if (user && user.tech_stack && user.tech_stack.length > 0) {
+        // Map tech stack to github language query or plain topic query
+        userTechQuery = user.tech_stack.map(tech => tech.includes(" ") ? `"${tech}"` : tech).join(" ");
+      }
+    }
+
+    const [mlRes, picksRes] = await Promise.all([
+      github.searchRepos("topic:machine-learning stars:>5000", { sort: "stars", perPage: 4 }),
+      github.searchRepos(`${userTechQuery} stars:>500`, { sort: "stars", perPage: 4 })
+    ]);
+
+    res.json({
+      topMl: mlRes.repos,
+      aiPicks: picksRes.repos
+    });
+  } catch (err) {
+    console.error("[repos/recommendations]", err.message);
+    res.status(500).json({ error: "Failed to fetch recommendations" });
+  }
+}

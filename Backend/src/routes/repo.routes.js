@@ -9,6 +9,7 @@ import {
   getHistory,
   clearHistory,
   getTrendingSearches,
+  getRecommendations,
 } from "../controllers/repo.controller.js";
 
 const router = Router();
@@ -18,6 +19,9 @@ router.get("/search", optionalAuth, searchRepos);                     // GET  /a
 
 // Trending searches — no auth required
 router.get("/trending", getTrendingSearches);           // GET  /api/repos/trending
+
+// Recommendations — optionally authenticated (to read profile)
+router.get("/recommendations", optionalAuth, getRecommendations); // GET /api/repos/recommendations
 
 // Repo detail — optionally authenticated (to mark saved)
 router.get("/:owner/:name", optionalAuth, getRepoDetails);            // GET  /api/repos/:owner/:name

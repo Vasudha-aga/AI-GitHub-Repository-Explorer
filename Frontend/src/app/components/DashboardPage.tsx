@@ -27,6 +27,8 @@ interface DashboardPageProps {
   savedRepos: Repository[];
   searchHistory?: any[];
   theme: "dark" | "light";
+  topMlRepos?: Repository[];
+  aiPicksRepos?: Repository[];
 }
 
 function StatCard({ label, value, sub, color, glow }: { label: string; value: string; sub: string; color: string; glow: string }) {
@@ -40,7 +42,7 @@ function StatCard({ label, value, sub, color, glow }: { label: string; value: st
   );
 }
 
-export function DashboardPage({ onNavigate, onViewRepo, onSaveRepo, repos, user, searchCount, savedCount, savedRepos = [], searchHistory = [], theme: _theme }: DashboardPageProps) {
+export function DashboardPage({ onNavigate, onViewRepo, onSaveRepo, repos, user, searchCount, savedCount, savedRepos = [], searchHistory = [], theme: _theme, topMlRepos = [], aiPicksRepos = [] }: DashboardPageProps) {
   const firstName = user.name.split(" ")[0];
   const hour = new Date().getHours();
   const greeting = hour < 12 ? "morning" : hour < 18 ? "afternoon" : "evening";
@@ -228,27 +230,86 @@ export function DashboardPage({ onNavigate, onViewRepo, onSaveRepo, repos, user,
         </div>
       </div>
 
-      {/* Quick actions */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {[
-          { title: "Top ML Repos",    desc: "Curated list of top Machine Learning repositories", page: "results" },
-          { title: "AI Picks For You", desc: "Personalized recommendations based on your profile", page: "recommendations" },
-          { title: "Recent Searches",  desc: "Browse your recent search history",                  page: "history" },
-        ].map(({ title, desc, page }) => (
-          <button
-            key={title}
-            onClick={() => onNavigate(page)}
-            className="flex items-start p-4 rounded-2xl text-left transition-all hover:translate-y-[-2px]"
-            style={{ background: "var(--surface-1)", border: "1px solid var(--glass-border)" }}
-            onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(79,142,247,0.2)"; e.currentTarget.style.boxShadow = "0 8px 30px rgba(0,0,0,0.4)"; }}
-            onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--glass-border)"; e.currentTarget.style.boxShadow = "none"; }}
-          >
-            <div>
-              <p style={{ fontSize: "13px", fontWeight: 600, color: "var(--foreground)", letterSpacing: "-0.01em" }}>{title}</p>
-              <p style={{ fontSize: "11px", color: "var(--muted-foreground)", marginTop: 3, lineHeight: 1.5 }}>{desc}</p>
-            </div>
-          </button>
-        ))}
+      {/* Personalized Data Sections */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+        {/* Recent Searches */}
+        <div className="rounded-2xl overflow-hidden flex flex-col" style={{ background: "var(--surface-1)", border: "1px solid var(--glass-border)", height: 400 }}>
+          <div className="px-5 py-4 border-b flex items-center justify-between" style={{ borderColor: "var(--glass-border)", background: "var(--surface-2)" }}>
+            <span style={{ fontSize: "14px", fontWeight: 600, letterSpacing: "-0.01em", color: "var(--foreground)" }}>Recent Searches</span>
+          </div>
+          <div className="flex-1 overflow-y-auto p-2 custom-scrollbar">
+            {searchHistory.flatMap(g => g.items).map((s, i) => (
+              <div key={i} onClick={() => onNavigate("history")} className="p-3 mb-2 rounded-xl cursor-pointer transition-all hover:translate-y-[-1px]" style={{ background: "var(--surface-2)", border: "1px solid transparent" }} onMouseEnter={e => e.currentTarget.style.borderColor="var(--blue-border)"} onMouseLeave={e => e.currentTarget.style.borderColor="transparent"}>
+                <div className="flex items-center gap-2 mb-1.5">
+                  <Search size={12} style={{ color: "var(--muted-foreground)" }} />
+                  <span style={{ fontSize: "13px", color: "var(--foreground)", fontWeight: 500 }}>{s.query}</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span style={{ fontSize: "10px", color: "var(--muted-foreground)" }}>{s.time}</span>
+                </div>
+              </div>
+            ))}
+            {searchHistory.flatMap(g => g.items).length === 0 && (
+              <div className="p-5 text-center" style={{ color: "var(--muted-foreground)", fontSize: "12px" }}>No recent searches yet.</div>
+            )}
+          </div>
+        </div>
+
+        {/* Top ML Repos */}
+        <div className="rounded-2xl overflow-hidden flex flex-col" style={{ background: "var(--surface-1)", border: "1px solid var(--glass-border)", height: 400 }}>
+          <div className="px-5 py-4 border-b flex items-center justify-between" style={{ borderColor: "var(--glass-border)", background: "var(--surface-2)" }}>
+            <span style={{ fontSize: "14px", fontWeight: 600, letterSpacing: "-0.01em", color: "var(--foreground)" }}>Top ML Repos</span>
+            <span className="mono" style={{ fontSize: "9px", color: "var(--blue)", background: "var(--blue-dim)", padding: "2px 6px", borderRadius: 4 }}>UPDATED DAILY</span>
+          </div>
+          <div className="flex-1 overflow-y-auto p-2 custom-scrollbar">
+            {topMlRepos.map((repo, i) => (
+              <div key={repo.id} onClick={() => onViewRepo(repo)} className="p-3 mb-2 rounded-xl cursor-pointer transition-all hover:translate-y-[-1px]" style={{ background: "var(--surface-2)", border: "1px solid transparent" }} onMouseEnter={e => e.currentTarget.style.borderColor="var(--blue-border)"} onMouseLeave={e => e.currentTarget.style.borderColor="transparent"}>
+                <div className="flex items-center justify-between mb-1">
+                  <span style={{ fontSize: "13px", color: "var(--foreground)", fontWeight: 600, display: "-webkit-box", WebkitLineClamp: 1, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{typeof repo.owner === 'object' ? repo.owner.login : repo.owner}/{repo.name}</span>
+                </div>
+                <div className="overflow-y-auto pr-2 custom-scrollbar" style={{ maxHeight: 40 }}>
+                  <p style={{ fontSize: "11px", color: "var(--muted-foreground)", lineHeight: 1.5, wordBreak: "break-word" }}>
+                    {repo.aiSummary || repo.description}
+                  </p>
+                </div>
+              </div>
+            ))}
+            {topMlRepos.length === 0 && (
+              <div className="p-5 text-center flex flex-col items-center justify-center h-full">
+                <div className="w-5 h-5 rounded-full border-2 border-t-transparent border-blue-500 animate-spin mb-3"></div>
+                <span style={{ color: "var(--muted-foreground)", fontSize: "12px" }}>Curating ML repos...</span>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* AI Picks For You */}
+        <div className="rounded-2xl overflow-hidden flex flex-col" style={{ background: "var(--surface-1)", border: "1px solid var(--glass-border)", height: 400 }}>
+          <div className="px-5 py-4 border-b flex items-center justify-between" style={{ borderColor: "var(--glass-border)", background: "var(--surface-2)" }}>
+            <span style={{ fontSize: "14px", fontWeight: 600, letterSpacing: "-0.01em", color: "var(--foreground)" }}>AI Picks For You</span>
+            <span className="mono" style={{ fontSize: "9px", color: "var(--purple)", background: "var(--purple-dim)", padding: "2px 6px", borderRadius: 4 }}>PERSONALIZED</span>
+          </div>
+          <div className="flex-1 overflow-y-auto p-2 custom-scrollbar">
+            {aiPicksRepos.map((repo, i) => (
+              <div key={repo.id} onClick={() => onViewRepo(repo)} className="p-3 mb-2 rounded-xl cursor-pointer transition-all hover:translate-y-[-1px]" style={{ background: "var(--surface-2)", border: "1px solid transparent" }} onMouseEnter={e => e.currentTarget.style.borderColor="var(--purple-border)"} onMouseLeave={e => e.currentTarget.style.borderColor="transparent"}>
+                <div className="flex items-center justify-between mb-1">
+                  <span style={{ fontSize: "13px", color: "var(--foreground)", fontWeight: 600, display: "-webkit-box", WebkitLineClamp: 1, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{typeof repo.owner === 'object' ? repo.owner.login : repo.owner}/{repo.name}</span>
+                </div>
+                <div className="overflow-y-auto pr-2 custom-scrollbar" style={{ maxHeight: 40 }}>
+                  <p style={{ fontSize: "11px", color: "var(--muted-foreground)", lineHeight: 1.5, wordBreak: "break-word" }}>
+                    {repo.aiSummary || repo.description}
+                  </p>
+                </div>
+              </div>
+            ))}
+            {aiPicksRepos.length === 0 && (
+              <div className="p-5 text-center flex flex-col items-center justify-center h-full">
+                <div className="w-5 h-5 rounded-full border-2 border-t-transparent border-purple-500 animate-spin mb-3"></div>
+                <span style={{ color: "var(--muted-foreground)", fontSize: "12px" }}>Generating AI picks...</span>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );

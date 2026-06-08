@@ -3,7 +3,7 @@ import { Star, GitFork, BookmarkPlus, BookmarkCheck, ExternalLink, Sparkles, Clo
 export interface Repository {
   id: number;
   name: string;
-  owner: string;
+  owner: any;
   fullName: string;
   description: string;
   language: string;
@@ -19,6 +19,8 @@ export interface Repository {
   license: string;
   openIssues: number;
   aiScore: number;
+  analysis?: any;
+  contributors?: any[];
 }
 
 const LANG_COLORS: Record<string, string> = {
@@ -75,7 +77,7 @@ export function RepoCard({ repo, onView, onSave, index = 0 }: RepoCardProps) {
       >
         <div className="flex items-start justify-between gap-2 mb-2.5">
           <div className="flex-1 min-w-0">
-            <span style={{ fontSize: "11px", color: "var(--muted-foreground)" }}>{repo.owner}</span>
+            <span style={{ fontSize: "11px", color: "var(--muted-foreground)" }}>{typeof repo.owner === 'object' ? repo.owner.login : repo.owner}</span>
             <span style={{ fontSize: "11px", color: "var(--muted-foreground)", margin: "0 4px" }}>/</span>
             <span style={{ fontSize: "14px", fontWeight: 700, color: "var(--foreground)", letterSpacing: "-0.02em" }}>{repo.name}</span>
           </div>

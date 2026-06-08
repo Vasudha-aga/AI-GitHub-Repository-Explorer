@@ -12,6 +12,7 @@ create table if not exists users (
   name        text,
   email       text,
   avatar_url  text,
+  tech_stack  text[],
   created_at  timestamptz default now()
 );
 
