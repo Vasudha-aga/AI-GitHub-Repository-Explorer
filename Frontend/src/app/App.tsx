@@ -335,7 +335,7 @@ export default function App() {
   const renderPage = () => {
     switch (currentPage) {
       case "dashboard":
-        return <DashboardPage onNavigate={nav} onViewRepo={handleView} onSaveRepo={handleSave} repos={repos} user={user} searchCount={searchCount} theme={theme} />;
+        return <DashboardPage onNavigate={nav} onViewRepo={handleView} onSaveRepo={handleSave} repos={repos} user={user} searchCount={searchCount} savedCount={savedCount} savedRepos={savedRepos} searchHistory={searchHistory} theme={theme} />;
       case "search":
         const recentSearchesFlat = searchHistory.flatMap(g => g.items).slice(0, 10);
         return <SearchPage onSearch={handleSearch} recentSearches={recentSearchesFlat} trendingSearches={trendingSearches} />;
@@ -344,7 +344,7 @@ export default function App() {
       case "details":
         return selectedRepo
           ? <RepoDetailsPage repo={selectedRepo} onBack={() => setCurrentPage("results")} onSave={handleSave} />
-          : <DashboardPage onNavigate={nav} onViewRepo={handleView} onSaveRepo={handleSave} repos={repos} user={user} searchCount={searchCount} theme={theme} />;
+          : <DashboardPage onNavigate={nav} onViewRepo={handleView} onSaveRepo={handleSave} repos={repos} user={user} searchCount={searchCount} savedCount={savedCount} savedRepos={savedRepos} searchHistory={searchHistory} theme={theme} />;
       case "recommendations":
         return <RecommendationsPage repos={repos} onViewRepo={handleView} onSaveRepo={handleSave} searchCount={searchCount} />;
       case "saved":
