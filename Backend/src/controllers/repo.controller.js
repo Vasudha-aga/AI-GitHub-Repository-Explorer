@@ -26,7 +26,7 @@ export async function searchRepos(req, res) {
 
     // Log search to history (fire-and-forget — don't block the response)
     if (userId) {
-      db.addSearchHistory(userId, q).catch(() => {});
+      db.addSearchHistory(userId, q).catch((e) => console.error("History log error:", e));
     }
 
     res.json({ total: result.total, repos });
@@ -134,5 +134,16 @@ export async function clearHistory(req, res) {
   } catch (err) {
     console.error("[repos/history/clear]", err.message);
     res.status(500).json({ error: "Failed to clear history" });
+  }
+}
+
+// ── GET /api/repos/trending ──────────────────────────────────────────────────
+export async function getTrendingSearches(req, res) {
+  try {
+    const trending = await db.getTrendingSearches(5);
+    res.json({ trending });
+  } catch (err) {
+    console.error("[repos/trending]", err.message);
+    res.status(500).json({ error: "Failed to fetch trending searches" });
   }
 }

@@ -31,7 +31,12 @@ export async function analyze(req, res) {
     const analysis = await analyzeRepo({ name, owner, description, language, stars, forks, topics, openIssues });
 
     // 3 — Cache in DB
-    const saved = await saveAnalysis(repo_id, analysis);
+    let saved = analysis;
+    try {
+      saved = await saveAnalysis(repo_id, analysis);
+    } catch (e) {
+      console.warn(`[ai/analyze] Cache save failed (schema mismatch?):`, e.message);
+    }
 
     // 4 — Return
     res.json({ analysis: saved, cached: false });

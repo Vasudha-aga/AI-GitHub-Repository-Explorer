@@ -53,9 +53,11 @@ interface RepoCardProps {
 }
 
 export function RepoCard({ repo, onView, onSave, index = 0 }: RepoCardProps) {
-  const d = DIFF[repo.difficulty];
-  const lc = LANG_COLORS[repo.language] ?? "#8b5cf6";
-  const scoreColor = repo.aiScore >= 95 ? "var(--green)" : repo.aiScore >= 85 ? "var(--blue)" : "var(--amber)";
+  const diffLabel = repo.difficulty || "Beginner";
+  const d = DIFF[diffLabel] || DIFF["Beginner"];
+  const lc = LANG_COLORS[repo.language || ""] ?? "#8b5cf6";
+  const aiScore = repo.aiScore || 0;
+  const scoreColor = aiScore >= 95 ? "var(--green)" : aiScore >= 85 ? "var(--blue)" : "var(--amber)";
 
   return (
     <div
@@ -85,8 +87,8 @@ export function RepoCard({ repo, onView, onSave, index = 0 }: RepoCardProps) {
             {repo.difficulty}
           </span>
         </div>
-        <p style={{ fontSize: "12px", color: "var(--muted-foreground)", lineHeight: 1.55, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
-          {repo.description}
+        <p style={{ fontSize: "13px", color: "var(--muted-foreground)", lineHeight: 1.5, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", marginBottom: 16 }}>
+          {repo.description || "No description available"}
         </p>
       </div>
 
@@ -108,13 +110,13 @@ export function RepoCard({ repo, onView, onSave, index = 0 }: RepoCardProps) {
             </div>
           </div>
           <p style={{ fontSize: "11px", color: "var(--muted-foreground)", lineHeight: 1.55, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
-            {repo.aiSummary}
+            {repo.aiSummary || "Analysis pending"}
           </p>
         </div>
 
         {/* Skills */}
         <div className="flex flex-wrap gap-1.5">
-          {repo.skills.slice(0, 5).map(skill => (
+          {(repo.skills || []).slice(0, 5).map(skill => (
             <span
               key={skill}
               className="px-2 py-0.5 rounded-md"
@@ -123,8 +125,8 @@ export function RepoCard({ repo, onView, onSave, index = 0 }: RepoCardProps) {
               {skill}
             </span>
           ))}
-          {repo.skills.length > 5 && (
-            <span style={{ fontSize: "10px", color: "var(--muted-foreground)", alignSelf: "center" }}>+{repo.skills.length - 5}</span>
+          {(repo.skills || []).length > 5 && (
+            <span style={{ fontSize: "10px", color: "var(--muted-foreground)", alignSelf: "center" }}>+{(repo.skills || []).length - 5}</span>
           )}
         </div>
 
@@ -132,19 +134,19 @@ export function RepoCard({ repo, onView, onSave, index = 0 }: RepoCardProps) {
         <div className="flex items-center gap-0 flex-wrap" style={{ gap: "0 16px" }}>
           <div className="flex items-center gap-1.5">
             <div className="rounded-full" style={{ width: 8, height: 8, background: lc, boxShadow: `0 0 4px ${lc}` }} />
-            <span style={{ fontSize: "11px", color: "var(--muted-foreground)" }}>{repo.language}</span>
+            <span style={{ fontSize: "11px", color: "var(--muted-foreground)" }}>{repo.language || "Unknown"}</span>
           </div>
           <div className="flex items-center gap-1">
             <Star size={11} style={{ color: "#f0a050" }} />
-            <span style={{ fontSize: "11px", color: "var(--muted-foreground)" }}>{fmt(repo.stars)}</span>
+            <span className="mono" style={{ fontSize: "11px", color: "var(--muted-foreground)" }}>{fmt(repo.stars || 0)}</span>
           </div>
           <div className="flex items-center gap-1">
-            <GitFork size={11} style={{ color: "var(--muted-foreground)" }} />
-            <span style={{ fontSize: "11px", color: "var(--muted-foreground)" }}>{fmt(repo.forks)}</span>
+            <GitFork size={11} style={{ color: "var(--blue)" }} />
+            <span className="mono" style={{ fontSize: "11px", color: "var(--muted-foreground)" }}>{fmt(repo.forks || 0)}</span>
           </div>
           <div className="flex items-center gap-1">
             <Eye size={11} style={{ color: "var(--muted-foreground)" }} />
-            <span style={{ fontSize: "11px", color: "var(--muted-foreground)" }}>{fmt(repo.watchers)}</span>
+            <span style={{ fontSize: "11px", color: "var(--muted-foreground)" }}>{fmt(repo.watchers || 0)}</span>
           </div>
           <div className="flex items-center gap-1 ml-auto">
             <Clock size={10} style={{ color: "var(--muted-foreground)" }} />

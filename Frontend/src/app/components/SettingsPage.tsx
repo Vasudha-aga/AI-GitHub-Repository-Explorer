@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { User, Bell, Palette, Zap, Check, AlertTriangle, Edit2, Moon, Sun } from "lucide-react";
-import { UserProfile } from "./mockData";
+import { UserProfile } from "../types";
 
 interface SettingsPageProps {
   user: UserProfile;
@@ -103,7 +103,7 @@ const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   ];
 
   const aiFields = [
-    { label: "AI Model",               value: selects["AI Model"],               options: ["GPT-4o", "GPT-4 Turbo", "Claude Sonnet 4.6"] },
+    { label: "AI Model",               value: selects["AI Model"],               options: ["gemini-1.5-flash"] },
     { label: "Default Language Filter", value: selects["Default Language Filter"], options: ["All Languages", "Python", "TypeScript", "Rust"] },
     { label: "Default Difficulty",      value: selects["Default Difficulty"],      options: ["All Levels", "Beginner", "Intermediate", "Advanced"] },
     { label: "Results Per Page",        value: selects["Results Per Page"],        options: ["6", "12", "24", "48"] },

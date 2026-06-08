@@ -1,12 +1,25 @@
 import axios from "axios";
 
+const githubToken = process.env.GITHUB_TOKEN;
+const hasToken = !!githubToken &&
+  githubToken !== "ghp_your_token_here" &&
+  githubToken !== "";
+
+const headers = {
+  Accept: "application/vnd.github+json",
+  "X-GitHub-Api-Version": "2022-11-28",
+};
+
+// Only attach Authorization if a real token is provided
+if (hasToken) {
+  headers.Authorization = `Bearer ${githubToken}`;
+} else {
+  console.log("⚠️  GitHub token not configured — using unauthenticated API (60 req/hr limit)");
+}
+
 const gh = axios.create({
   baseURL: "https://api.github.com",
-  headers: {
-    Authorization: `Bearer ${process.env.GITHUB_TOKEN}`,
-    Accept: "application/vnd.github+json",
-    "X-GitHub-Api-Version": "2022-11-28",
-  },
+  headers,
 });
 
 // ── Search repositories ─────────────────────────────────────────────────────
@@ -32,21 +45,27 @@ export async function getRepo(owner, name) {
 
 // ── Get repo contributors ───────────────────────────────────────────────────
 export async function getContributors(owner, name, perPage = 5) {
-  const { data } = await gh.get(`/repos/${owner}/${name}/contributors`, {
-    params: { per_page: perPage },
-  });
-  return data.map(c => ({
-    login:      c.login,
-    avatar_url: c.avatar_url,
-    commits:    c.contributions,
-    html_url:   c.html_url,
-  }));
+  try {
+    const { data } = await gh.get(`/repos/${owner}/${name}/contributors`, {
+      params: { per_page: perPage },
+    });
+    return data.map(c => ({
+      login:      c.login,
+      avatar_url: c.avatar_url,
+      commits:    c.contributions,
+      html_url:   c.html_url,
+    }));
+  } catch {
+    // Some repos (e.g. empty repos) may not have contributors
+    return [];
+  }
 }
 
 // ── Get repo languages breakdown ────────────────────────────────────────────
 export async function getLanguages(owner, name) {
   const { data } = await gh.get(`/repos/${owner}/${name}/languages`);
   const total = Object.values(data).reduce((a, b) => a + b, 0);
+  if (total === 0) return [];
   return Object.entries(data).map(([lang, bytes]) => ({
     name: lang,
     pct:  Math.round((bytes / total) * 100),
@@ -88,6 +107,7 @@ function normalizeRepo(r) {
     topics:      r.topics || [],
     updatedAt:   timeAgo(r.updated_at),
     htmlUrl:     r.html_url,
+    createdAt:   r.created_at,
     // These will be filled by Gemini later
     difficulty:  null,
     skills:      [],

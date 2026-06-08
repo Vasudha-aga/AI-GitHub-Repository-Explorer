@@ -1,12 +1,18 @@
 import { useState } from "react";
 import { Search, Sparkles, Clock, X, ArrowRight } from "lucide-react";
-import { trendingSearches, recentSearches, filterChips } from "./mockData";
+import { SearchHistoryItem } from "../types";
 
+const filterChips = [
+  "Python", "JavaScript", "TypeScript", "Machine Learning",
+  "Data Science", "Web Development", "AI", "Rust", "Go", "LLM",
+];
 interface SearchPageProps {
   onSearch: (query: string) => void;
+  recentSearches: SearchHistoryItem[];
+  trendingSearches: string[];
 }
 
-export function SearchPage({ onSearch }: SearchPageProps) {
+export function SearchPage({ onSearch, recentSearches, trendingSearches }: SearchPageProps) {
   const [query, setQuery] = useState("");
   const [activeFilters, setActiveFilters] = useState<string[]>([]);
   const [focused, setFocused] = useState(false);

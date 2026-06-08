@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Search, SlidersHorizontal, Sparkles } from "lucide-react";
+import { Search, SlidersHorizontal, Sparkles, BookmarkCheck } from "lucide-react";
 import { Repository, RepoCard, RepoCardSkeleton } from "./RepoCard";
 
 interface SavedPageProps {
@@ -12,17 +12,17 @@ export function SavedPage({ repos, onViewRepo, onSaveRepo }: SavedPageProps) {
   const [filter, setFilter] = useState("");
   const [diffFilter, setDiffFilter] = useState("All");
 
-  const saved = repos.filter(r => r.saved);
+  const saved = repos; // They are already saved repos, no need to filter by r.saved
   const filtered = saved
     .filter(r => diffFilter === "All" || r.difficulty === diffFilter)
     .filter(r =>
-      r.name.toLowerCase().includes(filter.toLowerCase()) ||
-      r.description.toLowerCase().includes(filter.toLowerCase()) ||
-      r.language.toLowerCase().includes(filter.toLowerCase()) ||
-      r.owner.toLowerCase().includes(filter.toLowerCase())
+      (r.name || "").toLowerCase().includes(filter.toLowerCase()) ||
+      (r.description || "").toLowerCase().includes(filter.toLowerCase()) ||
+      (r.language || "").toLowerCase().includes(filter.toLowerCase()) ||
+      (r.owner || "").toLowerCase().includes(filter.toLowerCase())
     );
 
-  const langs = [...new Set(saved.map(r => r.language))];
+  const langs = [...new Set(saved.map(r => r.language).filter(Boolean))];
 
   return (
     <div className="p-6 max-w-5xl mx-auto">

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { GitBranch, Calendar, MapPin, Link2, Edit3, Check, X, Camera, Plus } from "lucide-react";
 import { Repository } from "./RepoCard";
-import { UserProfile } from "./mockData";
+import { UserProfile } from "../types";
 import { BarChart, Bar, XAxis, Cell, ResponsiveContainer, Tooltip } from "recharts";
 
 interface ProfilePageProps {
@@ -9,6 +9,7 @@ interface ProfilePageProps {
   user: UserProfile;
   onUpdateUser: (u: UserProfile) => void;
   searchCount: number;
+  searchHistory?: any[]; // Passed from App.tsx
 }
 
 const AVATARS = [
@@ -42,18 +43,6 @@ const ALL_TECH_OPTIONS = [
   "WebAssembly", "Rust async", "Tokio", "Edge Computing",
 ];
 
-const WEEKLY = [
-  { day: "Mon", count: 5 }, { day: "Tue", count: 9 }, { day: "Wed", count: 3 },
-  { day: "Thu", count: 11 }, { day: "Fri", count: 14 }, { day: "Sat", count: 7 }, { day: "Sun", count: 6 },
-];
-
-const LANG_DIST = [
-  { name: "Python",     value: 52, color: "#3572A5" },
-  { name: "TypeScript", value: 28, color: "#2b7489" },
-  { name: "Rust",       value: 12, color: "#dea584" },
-  { name: "Go",         value: 8,  color: "#00ADD8" },
-];
-
 const AI_INSIGHTS = [
   "Strong affinity for Python-based ML frameworks — 72% of searches",
   "Search pattern suggests focus on production ML deployment",
@@ -63,19 +52,85 @@ const AI_INSIGHTS = [
   "Your saves are 3× more AI-focused than average Pro user",
 ];
 
-export function ProfilePage({ repos, user, onUpdateUser, searchCount }: ProfilePageProps) {
+const LANG_COLORS: Record<string, string> = {
+  Python:     "#3572A5",
+  JavaScript: "#f1e05a",
+  TypeScript: "#2b7489",
+  Rust:       "#dea584",
+  Go:         "#00ADD8",
+  Java:       "#b07219",
+  "C++":      "#f34b7d",
+  Ruby:       "#701516",
+  Swift:      "#FA7343",
+  Kotlin:     "#A97BFF",
+};
+
+export function ProfilePage({ repos, user, onUpdateUser, searchCount, searchHistory = [] }: ProfilePageProps) {
   const [editing, setEditing]         = useState(false);
   const [draft, setDraft]             = useState<UserProfile>(user);
   const [showAvatarPicker, setShowAvatarPicker] = useState(false);
-  const [techStack, setTechStack]     = useState<string[]>(DEFAULT_TECH);
-  const [draftTech, setDraftTech]     = useState<string[]>(DEFAULT_TECH);
+  const [techStack, setTechStack]     = useState<string[]>(user.tech_stack || DEFAULT_TECH);
+  const [draftTech, setDraftTech]     = useState<string[]>(user.tech_stack || DEFAULT_TECH);
   const [newTech, setNewTech]         = useState("");
 
   const saved = repos.filter(r => r.saved);
+
+  // Compute actual WEEKLY data
+  const WEEKLY = Array.from({ length: 7 }).map((_, i) => {
+    const d = new Date();
+    d.setDate(d.getDate() - (6 - i)); // Last 7 days, ending today
+    
+    const dayName = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][d.getDay()];
+    
+    // Reconstruct the date label exactly as groupHistory does in App.tsx
+    const dateLabel = d.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
+    const today = new Date();
+    const yesterday = new Date(today); 
+    yesterday.setDate(today.getDate() - 1);
+    
+    let expectedLabel = dateLabel;
+    if (d.toDateString() === today.toDateString()) {
+      expectedLabel = `Today — ${dateLabel}`;
+    } else if (d.toDateString() === yesterday.toDateString()) {
+      expectedLabel = `Yesterday — ${dateLabel}`;
+    }
+
+    // Find matching date group in history
+    const group = searchHistory.find(g => g.date === expectedLabel);
+    return { day: dayName, count: group ? group.items.length : 0 };
+  });
+
   const weekTotal = WEEKLY.reduce((a, b) => a + b.count, 0);
 
+  // Compute dynamic Language Distribution
+  const langCounts: Record<string, number> = {};
+  saved.forEach(r => {
+    if (r.language) {
+      langCounts[r.language] = (langCounts[r.language] || 0) + 1;
+    }
+  });
+  techStack.forEach(t => {
+    if (ALL_TECH_OPTIONS.includes(t) && LANG_COLORS[t]) {
+      langCounts[t] = (langCounts[t] || 0) + 2; // Tech stack counts more
+    }
+  });
+  
+  const LANG_DIST = Object.entries(langCounts)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 4)
+    .map(([name, count]) => ({
+      name,
+      value: count,
+      color: LANG_COLORS[name] || "#8b5cf6"
+    }));
+
+  // If no data, provide a fallback to look nice
+  if (LANG_DIST.length === 0) {
+    LANG_DIST.push({ name: "JavaScript", value: 1, color: LANG_COLORS["JavaScript"] });
+  }
+
   const saveEdits = () => {
-    onUpdateUser(draft);
+    onUpdateUser({ ...draft, tech_stack: draftTech });
     setTechStack(draftTech);
     setEditing(false);
     setShowAvatarPicker(false);
@@ -125,10 +180,15 @@ export function ProfilePage({ repos, user, onUpdateUser, searchCount }: ProfileP
           <div className="flex items-end gap-5" style={{ marginTop: -44, paddingTop: 0 }}>
             <div className="relative flex-shrink-0" style={{ marginBottom: 0 }}>
               <div
-                className="flex items-center justify-center rounded-2xl border-4"
+                className="flex items-center justify-center rounded-2xl border-4 overflow-hidden"
                 style={{ width: 88, height: 88, background: (editing ? draft.avatar : user.avatar) ? "var(--surface-2)" : "var(--gradient-brand)", borderColor: "var(--surface-1)", fontSize: (editing ? draft.avatar : user.avatar) ? "42px" : "26px", fontWeight: 800, color: "white", boxShadow: "0 0 32px var(--blue-glow)", lineHeight: 1 }}
               >
-                {(editing ? draft.avatar : user.avatar) || user.initials}
+                {(() => {
+                  const av = editing ? draft.avatar : user.avatar;
+                  if (!av) return user.initials;
+                  if (av.startsWith("http")) return <img src={av} alt="Avatar" className="w-full h-full object-cover" />;
+                  return av;
+                })()}
               </div>
               {editing && (
                 <button
@@ -300,7 +360,7 @@ export function ProfilePage({ repos, user, onUpdateUser, searchCount }: ProfileP
         {[
           { label: "Total Searches", value: String(searchCount),     color: "var(--blue)",   sub: "↑ 12 this week" },
           { label: "Saved Repos",    value: String(saved.length),    color: "var(--amber)",  sub: "All active" },
-          { label: "Day Streak",     value: String(user.streakDays), color: "var(--red)",    sub: "Personal best" },
+          { label: "Day Streak",     value: String(user.streak_count || 1), color: "var(--red)",    sub: "Current streak" },
         ].map(({ label, value, color, sub }) => (
           <div key={label} className="rounded-2xl p-5 text-center" style={{ background: "var(--surface-1)", border: "1px solid var(--glass-border)" }}>
             <p style={{ fontSize: "22px", fontWeight: 800, letterSpacing: "-0.04em", color }}>{value}</p>

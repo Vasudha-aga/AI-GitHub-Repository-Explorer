@@ -1,5 +1,5 @@
-import { Search, Clock, ArrowRight, Trash2, Star } from "lucide-react";
-import { SearchHistoryGroup } from "./mockData";
+import { Search, Clock, ArrowRight, Trash2, Star, History } from "lucide-react";
+import { SearchHistoryGroup } from "../types";
 
 interface HistoryPageProps {
   history: SearchHistoryGroup[];

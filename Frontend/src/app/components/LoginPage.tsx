@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Eye, EyeOff, Sparkles, ArrowRight, Sun, Moon, User, Mail, Lock } from "lucide-react";
 import { VideoBackground } from "./VideoBackground";
 import { RepoLensLogo } from "./RepoLensLogo";
+import api from "../../services/api";
 
 interface LoginPageProps {
   onLogin: () => void;
@@ -47,9 +48,18 @@ export function LoginPage({ onLogin, theme, onThemeChange }: LoginPageProps) {
     e.preventDefault();
     if (!email || !password) { setError("Please fill in both fields."); return; }
     setError(""); setLoading(true);
-    await new Promise(r => setTimeout(r, 1200));
-    setLoading(false);
-    onLogin();
+    try {
+      const res = await api.post("/api/auth/login", { email, password });
+      localStorage.setItem("access_token", res.data.access_token);
+      if (res.data.refresh_token) {
+        localStorage.setItem("refresh_token", res.data.refresh_token);
+      }
+      setLoading(false);
+      onLogin();
+    } catch (err: any) {
+      setError(err.response?.data?.error || "Invalid email or password.");
+      setLoading(false);
+    }
   };
 
   const handleSignUp = async (e: React.FormEvent) => {
@@ -58,10 +68,49 @@ export function LoginPage({ onLogin, theme, onThemeChange }: LoginPageProps) {
     if (password !== confirmPwd) { setError("Passwords do not match."); return; }
     if (password.length < 6) { setError("Password must be at least 6 characters."); return; }
     setError(""); setLoading(true);
-    await new Promise(r => setTimeout(r, 1400));
-    setLoading(false);
-    onLogin();
+    try {
+      const res = await api.post("/api/auth/register", {
+        name,
+        email,
+        password,
+        username: email.split("@")[0]
+      });
+      localStorage.setItem("access_token", res.data.access_token);
+      if (res.data.refresh_token) {
+        localStorage.setItem("refresh_token", res.data.refresh_token);
+      }
+      setLoading(false);
+      onLogin();
+    } catch (err: any) {
+      setError(err.response?.data?.error || "Registration failed.");
+      setLoading(false);
+    }
   };
+
+  const handleGithubSSO = async () => {
+    setError("");
+    setLoading(true);
+    try {
+      const res = await api.get("/api/auth/github");
+      if (res.data.url) {
+        // Redirect to Supabase GitHub OAuth
+        window.location.href = res.data.url;
+      } else {
+        // local dev mode fallback: log in mock user
+        const sessionRes = await api.post("/api/auth/session", {
+          access_token: "mock-session-token",
+          refresh_token: "mock-refresh-token"
+        });
+        localStorage.setItem("access_token", sessionRes.data.access_token);
+        setLoading(false);
+        onLogin();
+      }
+    } catch (err: any) {
+      setError("GitHub sign in failed.");
+      setLoading(false);
+    }
+  };
+
 
   const focusBorder = `1px solid rgba(${isLight ? "46,110,220" : "79,142,247"}, 0.6)`;
   const blurBorder  = `1px solid ${isLight ? "rgba(0,0,0,0.1)" : "rgba(255,255,255,0.08)"}`;
@@ -186,7 +235,7 @@ export function LoginPage({ onLogin, theme, onThemeChange }: LoginPageProps) {
             {/* GitHub SSO */}
             <button
               type="button"
-              onClick={onLogin}
+              onClick={handleGithubSSO}
               className="w-full flex items-center justify-center gap-3 py-3 rounded-2xl mb-4 transition-all hover:opacity-85 active:scale-[0.98]"
               style={{ background: githubBg, border: `1px solid ${githubBorder}`, color: githubColor, fontSize: "13px", fontWeight: 500 }}
             >

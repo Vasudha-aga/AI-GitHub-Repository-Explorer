@@ -5,6 +5,9 @@ import {
   handleSession,
   getMe,
   logout,
+  register,
+  login,
+  updateMe,
 } from "../controllers/auth.controller.js";
 
 const router = Router();
@@ -12,9 +15,13 @@ const router = Router();
 // Public
 router.get("/github",  getGithubOAuthUrl); // GET  /api/auth/github  → returns OAuth URL
 router.post("/session", handleSession);     // POST /api/auth/session → validate + sync user
+router.post("/register", register);         // POST /api/auth/register → sign up email/password
+router.post("/login",    login);            // POST /api/auth/login → sign in email/password
 
 // Protected
 router.get("/me",     authMiddleware, getMe);    // GET  /api/auth/me
+router.patch("/me",   authMiddleware, updateMe); // PATCH /api/auth/me
 router.post("/logout", authMiddleware, logout);   // POST /api/auth/logout
 
 export default router;
+

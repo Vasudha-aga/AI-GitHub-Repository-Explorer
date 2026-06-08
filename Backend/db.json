@@ -1,0 +1,39 @@
+{
+  "users": [
+    {
+      "github_id": "local-mock-github-id",
+      "username": "alexkumar_dev",
+      "name": "Alex Kumar",
+      "email": "alex@example.com",
+      "avatar_url": "",
+      "bio": "",
+      "created_at": "2026-06-08T09:39:46.706Z",
+      "id": "local-3wk4gdde6h1fs2e0hddxp8"
+    },
+    {
+      "id": "local-kkbdp0i6al3j5oypko6o5",
+      "github_id": "local-email-1pi6l",
+      "username": "vasudhagarwal10618",
+      "name": "Vasudha",
+      "email": "vasudhagarwal10618@gmail.com",
+      "password": "Vasu1231",
+      "avatar_url": "",
+      "bio": "",
+      "created_at": "2026-06-08T09:29:50.733Z"
+    },
+    {
+      "id": "local-9rbq0711j99v73wzuyj37l",
+      "github_id": "local-email-m5kam",
+      "username": "vasudhagarwal2711",
+      "name": "Vasudha",
+      "email": "vasudhagarwal2711@gmail.com",
+      "password": "Vasu1231",
+      "avatar_url": "",
+      "bio": "",
+      "created_at": "2026-06-08T09:30:03.299Z"
+    }
+  ],
+  "saved_repositories": [],
+  "search_history": [],
+  "ai_analysis": []
+}

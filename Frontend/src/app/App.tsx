@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { LoginPage } from "./components/LoginPage";
 import { Sidebar } from "./components/Sidebar";
 import { Navbar } from "./components/Navbar";
@@ -13,58 +13,319 @@ import { ProfilePage } from "./components/ProfilePage";
 import { SettingsPage } from "./components/SettingsPage";
 import { VideoBackground } from "./components/VideoBackground";
 import { Repository } from "./components/RepoCard";
-import { mockRepos, buildInitialHistory, defaultUser, SearchHistoryGroup, UserProfile } from "./components/mockData";
-
-/* MARKER-MAKE-KIT-INVOKED */
+import { UserProfile, SearchHistoryGroup, SearchHistoryItem } from "./types";
+import api from "../services/api";
 
 type Page =
   | "dashboard" | "search" | "results" | "details"
   | "recommendations" | "saved" | "history" | "profile" | "settings";
 
+function mapApiUser(dbUser: any): UserProfile {
+  const name = dbUser.name || "Developer";
+  const initials = name
+    .split(" ")
+    .map((n: string) => n[0])
+    .join("")
+    .substring(0, 2)
+    .toUpperCase() || "D";
+
+  const joined = dbUser.created_at
+    ? new Date(dbUser.created_at).toLocaleDateString("en-US", { month: "long", year: "numeric" })
+    : "June 2026";
+
+  return {
+    name,
+    username: dbUser.username ? `@${dbUser.username.replace(/^@/, "")}` : "@developer",
+    initials,
+    plan: "Pro Plan",
+    bio: dbUser.bio || "Building modern software. Explorer of repositories.",
+    location: dbUser.location || "Earth",
+    website: dbUser.website || "",
+    joinedDate: joined,
+    streakDays: 14,
+    aiInsightsCount: 89,
+    email: dbUser.email,
+    avatar: dbUser.avatar_url || undefined,
+  };
+}
+
+function groupHistory(items: any[]): SearchHistoryGroup[] {
+  const groups: Record<string, SearchHistoryItem[]> = {};
+
+  if (!items || !Array.isArray(items)) return [];
+
+  items.forEach(h => {
+    const dateObj = new Date(h.searched_at);
+    const dateLabel = dateObj.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
+
+    const today = new Date();
+    const yesterday = new Date(today); yesterday.setDate(today.getDate() - 1);
+
+    let finalLabel = dateLabel;
+    if (dateObj.toDateString() === today.toDateString()) {
+      finalLabel = `Today — ${dateLabel}`;
+    } else if (dateObj.toDateString() === yesterday.toDateString()) {
+      finalLabel = `Yesterday — ${dateLabel}`;
+    }
+
+    if (!groups[finalLabel]) groups[finalLabel] = [];
+
+    const timeStr = dateObj.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+
+    groups[finalLabel].push({
+      query: h.search_query,
+      time: timeStr,
+      results: 12,
+      topStars: 0,
+      filters: []
+    });
+  });
+
+  return Object.entries(groups).map(([date, items]) => ({ date, items }));
+}
+
 export default function App() {
-  const [loggedIn, setLoggedIn]         = useState(false);
-  const [currentPage, setCurrentPage]   = useState<Page>("dashboard");
-  const [searchQuery, setSearchQuery]   = useState("");
+  const [loggedIn, setLoggedIn] = useState(false);
+  const [currentPage, setCurrentPage] = useState<Page>("dashboard");
+  const [searchQuery, setSearchQuery] = useState("");
   const [selectedRepo, setSelectedRepo] = useState<Repository | null>(null);
-  const [repos, setRepos]               = useState<Repository[]>(mockRepos);
-  const [user, setUser]                 = useState<UserProfile>(defaultUser);
-  const [searchHistory, setSearchHistory] = useState<SearchHistoryGroup[]>(buildInitialHistory);
-  const [searchCount, setSearchCount]   = useState(247);
-  const [theme, setTheme]               = useState<"dark" | "light">("dark");
-  const [aiModel, setAiModel]           = useState("GPT-4o");
+  const [repos, setRepos] = useState<Repository[]>([]);
+  const [savedRepos, setSavedRepos] = useState<Repository[]>([]);
+  const [user, setUser] = useState<UserProfile | null>(null);
+  const [searchHistory, setSearchHistory] = useState<SearchHistoryGroup[]>([]);
+  const [trendingSearches, setTrendingSearches] = useState<string[]>([]);
+  const [searchCount, setSearchCount] = useState(0);
+  const [theme, setTheme] = useState<"dark" | "light">(() => {
+    return (localStorage.getItem("repolens_theme") as "dark" | "light") || "dark";
+  });
+  const [aiModel, setAiModel] = useState("gemini-1.5-flash");
 
-  const handleSave = (id: number) =>
-    setRepos(p => p.map(r => r.id === id ? { ...r, saved: !r.saved } : r));
+  useEffect(() => {
+    localStorage.setItem("repolens_theme", theme);
+    document.documentElement.style.colorScheme = theme;
+    document.documentElement.classList.remove("dark", "light");
+    document.documentElement.classList.add(theme);
+  }, [theme]);
 
-  const handleView = (repo: Repository) => {
+  const isSyncing = useRef(false);
+
+  // Initial load logic
+  useEffect(() => {
+    // 1. Check URL hash for OAuth redirect token
+    const hash = window.location.hash;
+    if (hash && hash.includes("access_token")) {
+      isSyncing.current = true;
+      const params = new URLSearchParams(hash.substring(1));
+      const accessToken = params.get("access_token");
+      const refreshToken = params.get("refresh_token");
+
+      if (accessToken) {
+        localStorage.setItem("access_token", accessToken);
+        if (refreshToken) localStorage.setItem("refresh_token", refreshToken);
+        window.history.replaceState(null, "", window.location.pathname);
+        syncSession(accessToken, refreshToken || "");
+        return;
+      }
+    }
+
+    // 2. Otherwise load existing session (skip if we are currently syncing)
+    if (!isSyncing.current && localStorage.getItem("access_token")) {
+      loadProfileAndData();
+    }
+  }, []);
+
+  const syncSession = async (accessToken: string, refreshToken: string) => {
+    try {
+      const res = await api.post("/api/auth/session", { access_token: accessToken, refresh_token: refreshToken });
+      setUser(mapApiUser(res.data.user));
+      setLoggedIn(true);
+      loadDashboardData();
+    } catch (err) {
+      console.error("Session sync failed:", err);
+      localStorage.removeItem("access_token");
+    }
+  };
+
+  const loadProfileAndData = async () => {
+    try {
+      const res = await api.get("/api/auth/me");
+      setUser(mapApiUser(res.data.user));
+      setLoggedIn(true);
+      loadDashboardData();
+    } catch (err) {
+      console.error("Token verification failed, logging out", err);
+      localStorage.removeItem("access_token");
+      setLoggedIn(false);
+    }
+  };
+
+  const loadDashboardData = async () => {
+    try {
+      // Load saved repos
+      const savedRes = await api.get("/api/repos/saved");
+      setSavedRepos(savedRes.data.repos || []);
+
+      // Load search history
+      const historyRes = await api.get("/api/repos/history");
+      const grouped = groupHistory(historyRes.data.history || []);
+      setSearchHistory(grouped);
+      setSearchCount((historyRes.data.history || []).length);
+
+      // Run a default trending query so dashboard has cards
+      const trendingRes = await api.get("/api/repos/search", { params: { q: "stars:>10000" } });
+      setRepos(trendingRes.data.repos || []);
+
+      // Load trending queries
+      api.get("/api/repos/trending").then(res => setTrendingSearches(res.data.trending || [])).catch(() => { });
+    } catch (e) {
+      console.error("Failed to load dashboard data:", e);
+    }
+  };
+
+  // Re-load saved repos and history whenever logged in status changes or pages change
+  useEffect(() => {
+    if (loggedIn) {
+      api.get("/api/repos/saved").then(res => setSavedRepos(res.data.repos || [])).catch(() => { });
+      api.get("/api/repos/history").then(res => {
+        setSearchHistory(groupHistory(res.data.history || []));
+        setSearchCount((res.data.history || []).length);
+      }).catch(() => { });
+    }
+  }, [loggedIn, currentPage]);
+
+  const handleSave = async (id: number) => {
+    const allMatching = [...repos, ...savedRepos];
+    const repo = allMatching.find(r => r.id === id);
+    if (!repo) return;
+
+    const isCurrentlySaved = savedRepos.some(r => r.id === id);
+
+    try {
+      if (isCurrentlySaved) {
+        await api.delete(`/api/repos/save/${id}`);
+      } else {
+        await api.post("/api/repos/save", {
+          repo_id: repo.id,
+          repo_name: repo.fullName || repo.name,
+          repo_url: repo.htmlUrl,
+          repo_data: repo
+        });
+      }
+
+      // Refresh saved repos
+      const savedRes = await api.get("/api/repos/saved");
+      const updatedSaved = savedRes.data.repos;
+      setSavedRepos(updatedSaved);
+
+      // Toggle saved flag in current search results
+      setRepos(prev => prev.map(r => r.id === id ? { ...r, saved: !isCurrentlySaved } : r));
+
+      // Update selected repo if open
+      if (selectedRepo?.id === id) {
+        setSelectedRepo(prev => prev ? { ...prev, saved: !isCurrentlySaved } : null);
+      }
+    } catch (err) {
+      console.error("Save toggle failed:", err);
+    }
+  };
+
+  const handleView = async (repo: Repository) => {
     setSelectedRepo(repo);
     setCurrentPage("details");
+
+    try {
+      const res = await api.get(`/api/repos/${repo.owner}/${repo.name}`);
+      let fullRepo = { ...repo, ...res.data };
+      setSelectedRepo(fullRepo);
+
+      if (!fullRepo.analysis && !fullRepo.aiSummary) {
+        const aiRes = await api.post("/api/ai/analyze", {
+          repo_id: fullRepo.id,
+          name: fullRepo.name,
+          owner: fullRepo.owner,
+          description: fullRepo.description,
+          language: fullRepo.language,
+          stars: fullRepo.stars,
+          forks: fullRepo.forks,
+          topics: fullRepo.topics,
+          openIssues: fullRepo.openIssues
+        });
+        
+        if (aiRes.data?.analysis) {
+          fullRepo.analysis = aiRes.data.analysis;
+        }
+      }
+
+      if (fullRepo.analysis) {
+        fullRepo = {
+          ...fullRepo,
+          difficulty: fullRepo.analysis.difficulty,
+          skills: fullRepo.analysis.required_skills || fullRepo.analysis.skills || [],
+          aiSummary: fullRepo.analysis.summary,
+          aiScore: fullRepo.analysis.ai_score
+        };
+        setSelectedRepo(fullRepo);
+        setRepos(prev => prev.map(r => r.id === repo.id ? fullRepo : r));
+      }
+    } catch (err) {
+      console.error("Failed to load repo details:", err);
+    }
   };
 
-  const handleSearch = (q: string) => {
+  const handleSearch = async (q: string) => {
     setSearchQuery(q);
     setCurrentPage("results");
-    setSearchCount(c => c + 1);
-    const now = new Date();
-    const timeStr = now.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
-    const todayLabel = `Today — ${now.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}`;
-    const newItem = { query: q, time: timeStr, results: Math.floor(Math.random() * 40) + 5, topStars: 0, filters: [] };
-    setSearchHistory(prev => {
-      if (prev.length > 0 && prev[0].date === todayLabel) {
-        return [{ ...prev[0], items: [newItem, ...prev[0].items] }, ...prev.slice(1)];
-      }
-      return [{ date: todayLabel, items: [newItem] }, ...prev];
-    });
+    try {
+      const res = await api.get("/api/repos/search", { params: { q } });
+      setRepos(res.data.repos);
+    } catch (err) {
+      console.error("Search failed:", err);
+    }
   };
 
-  const handleClearHistory = () => setSearchHistory([]);
-  const nav = (page: string) => setCurrentPage(page as Page);
-  const savedCount = repos.filter(r => r.saved).length;
+  const handleClearHistory = async () => {
+    try {
+      await api.delete("/api/repos/history");
+      setSearchHistory([]);
+      setSearchCount(0);
+    } catch (err) {
+      console.error("Failed to clear history:", err);
+    }
+  };
 
-  if (!loggedIn) {
+  const handleUpdateUser = async (updated: UserProfile) => {
+    try {
+      const res = await api.patch("/api/auth/me", {
+        name: updated.name,
+        username: updated.username.replace(/^@/, ""),
+        bio: updated.bio,
+        location: updated.location,
+        website: updated.website,
+        avatar: updated.avatar
+      });
+      setUser(mapApiUser(res.data.user));
+    } catch (err) {
+      console.error("Profile update failed:", err);
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await api.post("/api/auth/logout");
+    } catch { }
+    localStorage.removeItem("access_token");
+    localStorage.removeItem("refresh_token");
+    setLoggedIn(false);
+    setCurrentPage("dashboard");
+  };
+
+  const nav = (page: string) => setCurrentPage(page as Page);
+  const savedCount = savedRepos.length;
+
+  if (!loggedIn || !user) {
     return (
       <div className={theme}>
-        <LoginPage onLogin={() => setLoggedIn(true)} theme={theme} onThemeChange={setTheme} />
+        <LoginPage onLogin={loadProfileAndData} theme={theme} onThemeChange={setTheme} />
       </div>
     );
   }
@@ -76,7 +337,8 @@ export default function App() {
       case "dashboard":
         return <DashboardPage onNavigate={nav} onViewRepo={handleView} onSaveRepo={handleSave} repos={repos} user={user} searchCount={searchCount} theme={theme} />;
       case "search":
-        return <SearchPage onSearch={handleSearch} />;
+        const recentSearchesFlat = searchHistory.flatMap(g => g.items).slice(0, 10);
+        return <SearchPage onSearch={handleSearch} recentSearches={recentSearchesFlat} trendingSearches={trendingSearches} />;
       case "results":
         return <SearchResultsPage query={searchQuery} repos={repos} onViewRepo={handleView} onSaveRepo={handleSave} onSearch={handleSearch} />;
       case "details":
@@ -86,13 +348,13 @@ export default function App() {
       case "recommendations":
         return <RecommendationsPage repos={repos} onViewRepo={handleView} onSaveRepo={handleSave} searchCount={searchCount} />;
       case "saved":
-        return <SavedPage repos={repos} onViewRepo={handleView} onSaveRepo={handleSave} />;
+        return <SavedPage repos={savedRepos} onViewRepo={handleView} onSaveRepo={handleSave} />;
       case "history":
         return <HistoryPage history={searchHistory} onSearch={handleSearch} onClearHistory={handleClearHistory} />;
       case "profile":
-        return <ProfilePage repos={repos} user={user} onUpdateUser={setUser} searchCount={searchCount} />;
+        return <ProfilePage repos={savedRepos} user={user} onUpdateUser={handleUpdateUser} searchCount={searchCount} searchHistory={searchHistory} />;
       case "settings":
-        return <SettingsPage user={user} onUpdateUser={setUser} theme={theme} onThemeChange={setTheme} onLogout={() => setLoggedIn(false)} aiModel={aiModel} onAiModelChange={setAiModel} />;
+        return <SettingsPage user={user} onUpdateUser={handleUpdateUser} theme={theme} onThemeChange={setTheme} onLogout={handleLogout} aiModel={aiModel} onAiModelChange={setAiModel} />;
       default:
         return <DashboardPage onNavigate={nav} onViewRepo={handleView} onSaveRepo={handleSave} repos={repos} user={user} searchCount={searchCount} theme={theme} />;
     }
@@ -108,7 +370,6 @@ export default function App() {
         colorScheme: isLight ? "light" : "dark",
       }}
     >
-      {/* Video background — dark uses HLS stream, light uses the new MP4 */}
       <VideoBackground
         theme={theme}
         overlayOpacity={isLight ? 0.82 : 0.88}
@@ -121,7 +382,7 @@ export default function App() {
       />
 
       <div className="relative flex h-full z-10">
-        <Sidebar currentPage={currentPage} onNavigate={nav} savedCount={savedCount} user={user} theme={theme} onLogout={() => setLoggedIn(false)} />
+        <Sidebar currentPage={currentPage} onNavigate={nav} savedCount={savedCount} user={user} theme={theme} onLogout={handleLogout} />
         <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
           <Navbar onNavigate={nav} onSearch={handleSearch} user={user} theme={theme} onThemeChange={setTheme} aiModel={aiModel} />
           <main className="flex-1 overflow-y-auto">

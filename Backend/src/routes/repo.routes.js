@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { authMiddleware } from "../middleware/auth.middleware.js";
+import { authMiddleware, optionalAuth } from "../middleware/auth.middleware.js";
 import {
   searchRepos,
   getRepoDetails,
@@ -8,15 +8,19 @@ import {
   unsaveRepo,
   getHistory,
   clearHistory,
+  getTrendingSearches,
 } from "../controllers/repo.controller.js";
 
 const router = Router();
 
-// Search — optionally authenticated (to mark saved repos)
-router.get("/search", searchRepos);                     // GET  /api/repos/search?q=...
+// Search — optionally authenticated (to mark saved repos and log history)
+router.get("/search", optionalAuth, searchRepos);                     // GET  /api/repos/search?q=...
+
+// Trending searches — no auth required
+router.get("/trending", getTrendingSearches);           // GET  /api/repos/trending
 
 // Repo detail — optionally authenticated (to mark saved)
-router.get("/:owner/:name", getRepoDetails);            // GET  /api/repos/:owner/:name
+router.get("/:owner/:name", optionalAuth, getRepoDetails);            // GET  /api/repos/:owner/:name
 
 // Protected — require login
 router.get   ("/saved",          authMiddleware, getSavedRepos);  // GET    /api/repos/saved

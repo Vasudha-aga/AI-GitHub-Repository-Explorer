@@ -1,6 +1,6 @@
 import { Search, Sparkles, Zap, ArrowRight, BarChart2 } from "lucide-react";
 import { Repository, RepoCard } from "./RepoCard";
-import { UserProfile } from "./mockData";
+import { UserProfile } from "../types";
 import { AreaChart, Area, ResponsiveContainer, Tooltip, XAxis } from "recharts";
 
 const activityData = [

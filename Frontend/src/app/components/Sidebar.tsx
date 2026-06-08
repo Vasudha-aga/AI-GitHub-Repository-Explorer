@@ -4,7 +4,7 @@ import {
   User, Settings, Sparkles, Zap, ChevronRight, LogOut
 } from "lucide-react";
 import { RepoLensLogo } from "./RepoLensLogo";
-import { UserProfile } from "./mockData";
+import { UserProfile } from "../types";
 
 interface SidebarProps {
   currentPage: string;

@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
 import { Search, Command, Sparkles, X, TrendingUp, Clock, Sun, Moon } from "lucide-react";
-import { UserProfile } from "./mockData";
+import { UserProfile } from "../types";
 
 interface NavbarProps {
   onNavigate: (page: string) => void;
@@ -146,10 +146,14 @@ export function Navbar({ onNavigate, onSearch, user, theme, onThemeChange, aiMod
           onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.borderColor = "transparent"; }}
         >
           <div
-            className="flex items-center justify-center rounded-full flex-shrink-0"
+            className="flex items-center justify-center rounded-full flex-shrink-0 overflow-hidden"
             style={{ width: 30, height: 30, background: "var(--gradient-brand)", fontSize: "11px", fontWeight: 800, color: "white", boxShadow: "0 0 12px var(--blue-glow)" }}
           >
-            {user.initials}
+            {user.avatar && user.avatar.startsWith("http") ? (
+              <img src={user.avatar} alt="Avatar" className="w-full h-full object-cover" />
+            ) : (
+              user.avatar || user.initials
+            )}
           </div>
           <div className="hidden sm:block text-left">
             <p style={{ fontSize: "12px", fontWeight: 600, color: "var(--foreground)", lineHeight: 1.2 }}>{user.name}</p>
