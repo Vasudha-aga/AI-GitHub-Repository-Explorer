@@ -36,17 +36,17 @@
 - (Optional) A Supabase Project
 
 ### 1. Clone the repository
-\`\`\`bash
+\`\`bash
 git clone https://github.com/your-username/AI-GitHub-Repository-Explorer.git
 cd AI-GitHub-Repository-Explorer
-\`\`\`
+\`\`
 
 ### 2. Backend Setup
 Navigate to the backend directory and install dependencies:
-\`\`\`bash
+\`\`bash
 cd Backend
 npm install
-\`\`\`
+\`\`
 
 Create a \`.env\` file in the \`Backend\` directory and add your keys:
 \`\`\`env
@@ -97,6 +97,3 @@ If using Supabase, the following primary tables are used:
 
 Contributions, issues, and feature requests are welcome! Feel free to check the issues page.
 
-## 📝 License
-
-This project is licensed under the MIT License.
