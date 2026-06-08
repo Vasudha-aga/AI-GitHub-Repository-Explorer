@@ -145,7 +145,7 @@ export function SearchPage({ onSearch, recentSearches, trendingSearches }: Searc
           <div className="px-4 py-3.5 border-b flex items-center gap-2.5" style={{ borderColor: "var(--glass-border)", background: "var(--surface-2)" }}>
             <span style={{ fontSize: "12px", fontWeight: 600, letterSpacing: "-0.01em", color: "var(--foreground)" }}>Trending Searches</span>
           </div>
-          <div className="divide-y" style={{ "--tw-divide-opacity": 1 } as any}>
+          <div className="divide-y overflow-y-auto" style={{ "--tw-divide-opacity": 1, maxHeight: 320 } as any}>
             {trendingSearches.map((s, i) => (
               <button
                 key={s}
@@ -177,7 +177,7 @@ export function SearchPage({ onSearch, recentSearches, trendingSearches }: Searc
           <div className="px-4 py-3.5 border-b flex items-center gap-2.5" style={{ borderColor: "var(--glass-border)", background: "var(--surface-2)" }}>
             <span style={{ fontSize: "12px", fontWeight: 600, letterSpacing: "-0.01em", color: "var(--foreground)" }}>Recent Searches</span>
           </div>
-          <div>
+          <div className="overflow-y-auto" style={{ maxHeight: 320 }}>
             {recentSearches.map((s, i) => (
               <button
                 key={s.query}

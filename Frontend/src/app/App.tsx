@@ -172,7 +172,7 @@ export default function App() {
       setSearchCount((historyRes.data.history || []).length);
 
       // Run a default trending query so dashboard has cards
-      const trendingRes = await api.get("/api/repos/search", { params: { q: "stars:>10000" } });
+      const trendingRes = await api.get("/api/repos/search", { params: { q: "stars:>10000", log: false } });
       setRepos(trendingRes.data.repos || []);
 
       // Load trending queries

@@ -25,7 +25,8 @@ export async function searchRepos(req, res) {
     }));
 
     // Log search to history (fire-and-forget — don't block the response)
-    if (userId) {
+    const shouldLog = req.query.log !== "false" && req.query.log !== false;
+    if (userId && shouldLog) {
       db.addSearchHistory(userId, q).catch((e) => console.error("History log error:", e));
     }
 
