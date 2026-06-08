@@ -138,17 +138,7 @@ export async function handleSession(req, res) {
     dbUser = await processStreak(dbUser);
 
     res.json({
-      user: {
-        id:         dbUser.id,
-        github_id:  dbUser.github_id,
-        username:   dbUser.username,
-        name:       dbUser.name,
-        email:      dbUser.email,
-        avatar_url: dbUser.avatar_url,
-        created_at: dbUser.created_at,
-        streak_count: dbUser.streak_count || 1,
-        tech_stack: dbUser.tech_stack || [],
-      },
+      user: dbUser,
       access_token,
       refresh_token,
     });
