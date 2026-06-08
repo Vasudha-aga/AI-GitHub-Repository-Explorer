@@ -90,6 +90,8 @@ export async function analyzeRepo(repoInfo) {
   const prompt = `
 You are an expert developer who evaluates open-source GitHub repositories for developers wanting to learn from them.
 
+CRITICAL: Your ENTIRE output (summary, skills, outcomes, etc.) MUST be strictly in English only. If the repository description or name is in another language (like Chinese, Spanish, etc.), you MUST translate and synthesize your analysis into English.
+
 Analyze the following repository and respond ONLY with a valid JSON object. Do not include markdown, code fences, or any other text.
 
 Repository:
