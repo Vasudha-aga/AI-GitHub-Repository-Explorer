@@ -36,20 +36,20 @@
 - (Optional) A Supabase Project
 
 ### 1. Clone the repository
-\`\`bash
+``bash
 git clone https://github.com/your-username/AI-GitHub-Repository-Explorer.git
 cd AI-GitHub-Repository-Explorer
-\`\`
+``
 
 ### 2. Backend Setup
 Navigate to the backend directory and install dependencies:
-\`\`bash
+``bash
 cd Backend
 npm install
-\`\`
+``
 
-Create a \`.env\` file in the \`Backend\` directory and add your keys:
-\`\`\`env
+Create a `.env` file in the `Backend` directory and add your keys:
+```env
 PORT=4000
 
 # GitHub API (For searching and fetching repo details)
@@ -61,27 +61,27 @@ GEMINI_API_KEY=your_gemini_api_key
 # Supabase (Optional - uses local db.json if left empty)
 SUPABASE_URL=your_supabase_url
 SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_key
-\`\`\`
+```
 
 *(Note: If using Supabase, run the \`supabase_migration.sql\` script in your Supabase SQL Editor to set up the tables).*
 
 Start the backend server:
-\`\`\`bash
+```bash
 npm run dev
 # OR: node --watch server.js
-\`\`\`
+```
 
 ### 3. Frontend Setup
 Open a new terminal, navigate to the frontend directory, and install dependencies:
-\`\`\`bash
+```bash
 cd Frontend
 npm install
-\`\`\`
+```
 
 Start the Vite development server:
-\`\`\`bash
+```bash
 npm run dev
-\`\`\`
+```
 
 Your application should now be running at **http://localhost:5173** (Frontend) and communicating with the API at **http://localhost:4000** (Backend).
 
