@@ -71,7 +71,7 @@ export async function getGithubOAuthUrl(req, res) {
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: "github",
     options: {
-      redirectTo: `${process.env.FRONTEND_URL}/auth/callback`,
+      redirectTo: `${process.env.FRONTEND_URL}`,
       skipBrowserRedirect: true, // we just want the URL, not a server redirect
     },
   });
