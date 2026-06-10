@@ -3,7 +3,9 @@
 
 **RepoLens** is a modern, AI-powered GitHub repository explorer designed to help developers seamlessly discover, understand, and save open-source projects. By integrating the GitHub API with Google's Gemini AI, RepoLens analyzes repositories to provide clear, practical summaries, skill requirements, and learning outcomes in plain English—no matter what language the original repository is written in.
 
+🚀 Try it now: https://ai-git-hub-repository-explorer-npldawqx4-vasudha-agas-projects.vercel.app
 ## 🚀 Key Features
+
 
 - **🧠 AI-Powered Repository Analysis**: Automatically generate insights, difficulty levels, required skills, and practical learning outcomes for any GitHub repository using the Gemini API.
 - **🔍 Advanced GitHub Search**: Explore the vast GitHub ecosystem with a fast, intuitive search interface.
